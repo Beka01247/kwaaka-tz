@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: kwaaka-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: kwaaka
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kwaaka-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: kwaaka-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - kwaaka-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kwaaka-app
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # Server config
+      ADDR: ":8080"
+      EXTERNAL_URL: "localhost:8080"
+      ENV: "production"
+
+      # Rate limiter
+      RATE_LIMITER_ENABLED: "true"
+      RATELIMITER_REQUESTS_COUNT: "20"
+
+      # MongoDB
+      MONGO_URI: "mongodb://admin:password@mongodb:27017"
+      MONGO_DATABASE: "kwaaka"
+
+      # RabbitMQ
+      RABBITMQ_URL: "amqp://admin:password@rabbitmq:5672/"
+      RABBITMQ_MAX_RETRIES: "3"
+      RABBITMQ_PREFETCH_COUNT: "10"
+
+      # gcp
+      GOOGLE_CREDENTIALS_PATH: "/root/credentials.json"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    networks:
+      - kwaaka-network
+    volumes:
+      - ./credentials.json:/root/credentials.json:ro
+      - ./docs:/root/docs
+
+networks:
+  kwaaka-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  rabbitmq_data:
