@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Beka01247/kwaaka-tz/docs"
 	"github.com/Beka01247/kwaaka-tz/internal/queue"
 	"github.com/Beka01247/kwaaka-tz/internal/ratelimiter"
 	"github.com/Beka01247/kwaaka-tz/internal/repo"
@@ -18,8 +19,7 @@ import (
 	"github.com/Beka01247/kwaaka-tz/internal/worker"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
 )
 
@@ -86,6 +86,9 @@ func (app *application) mount() http.Handler {
 
 func (app *application) run(mux http.Handler) error {
 	// docs
+	docs.SwaggerInfo.Title = "Kwaaka Tech"
+	docs.SwaggerInfo.Description = "API for Kwaaka Tech"
+	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Host = app.config.apiURL
 	docs.SwaggerInfo.BasePath = "/api/v1"
 

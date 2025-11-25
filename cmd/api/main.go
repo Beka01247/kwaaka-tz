@@ -29,7 +29,7 @@ const version = "0.0.0"
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @BasePath					/v1
+// @BasePath					/api/v1
 //
 // @securityDefinitions.apiKey	ApiKeyAuth
 // @in							header

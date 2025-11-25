@@ -1,4 +1,148 @@
-basePath: /v1
+basePath: /api/v1
+definitions:
+  domain.Attribute:
+    properties:
+      id:
+        type: string
+      max:
+        type: integer
+      min:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  domain.AttributeGroup:
+    properties:
+      attributes:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      max:
+        type: integer
+      min:
+        type: integer
+      name:
+        type: string
+    type: object
+  domain.Menu:
+    properties:
+      attributes:
+        items:
+          $ref: '#/definitions/domain.Attribute'
+        type: array
+      attributes_groups:
+        items:
+          $ref: '#/definitions/domain.AttributeGroup'
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      products:
+        items:
+          $ref: '#/definitions/domain.Product'
+        type: array
+      restaurant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.ParsingTask:
+    properties:
+      created_at:
+        type: string
+      error_message:
+        type: string
+      id:
+        type: string
+      menu_id:
+        type: string
+      restaurant_name:
+        type: string
+      retry_count:
+        type: integer
+      spreadsheet_id:
+        type: string
+      status:
+        $ref: '#/definitions/domain.ParsingTaskStatus'
+      updated_at:
+        type: string
+    type: object
+  domain.ParsingTaskStatus:
+    enum:
+    - queued
+    - processing
+    - completed
+    - failed
+    type: string
+    x-enum-varnames:
+    - StatusQueued
+    - StatusProcessing
+    - StatusCompleted
+    - StatusFailed
+  domain.Product:
+    properties:
+      attributes:
+        items:
+          type: string
+        type: array
+      category:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_combo:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      status:
+        type: string
+    type: object
+  main.CreateParseTaskRequest:
+    properties:
+      restaurant_name:
+        type: string
+      spreadsheet_id:
+        type: string
+    required:
+    - restaurant_name
+    - spreadsheet_id
+    type: object
+  main.HealthResponse:
+    properties:
+      services:
+        additionalProperties:
+          type: string
+        type: object
+      status:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  main.UpdateProductStatusRequest:
+    properties:
+      reason:
+        type: string
+      status:
+        enum:
+        - available
+        - not_available
+        - deleted
+        type: string
+      user_id:
+        type: string
+    required:
+    - status
+    type: object
 info:
   contact:
     email: support@swagger.io
@@ -18,12 +162,168 @@ paths:
       - application/json
       responses:
         "200":
-          description: ok
+          description: OK
           schema:
-            type: string
+            $ref: '#/definitions/main.HealthResponse'
       summary: Healthcheck
       tags:
       - ops
+  /menu/{menu_id}:
+    get:
+      description: Get menu details by menu ID
+      parameters:
+      - description: Menu ID
+        in: path
+        name: menu_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get menu by ID
+      tags:
+      - menus
+  /parse:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new menu parsing task from Google Sheets
+      parameters:
+      - description: Parse task request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreateParseTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create menu parsing task
+      tags:
+      - parsing
+  /parse/{task_id}:
+    get:
+      description: Get the status of a menu parsing task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ParsingTask'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get parsing task status
+      tags:
+      - parsing
+  /products/{product_id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a product
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: string
+      - description: Status update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateProductStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update product status
+      tags:
+      - products
 securityDefinitions:
   ApiKeyAuth:
     in: header

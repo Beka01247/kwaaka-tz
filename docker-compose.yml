@@ -58,7 +58,6 @@ services:
       - menu-parser-network
     volumes:
       - ./credentials.json:/root/credentials.json:ro
-      - ./docs:/root/docs
     healthcheck:
       test:
         [
